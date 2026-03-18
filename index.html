@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>קרא איתי! 📚</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Varela Round', 'Frank Ruhl Libre', Arial, sans-serif;
+      background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      direction: rtl;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 28px;
+      padding: 28px 24px;
+      max-width: 560px;
+      width: 100%;
+      box-shadow: 0 16px 48px rgba(0,0,0,.22);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Progress ── */
+    .header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .title {
+      font-size: 1.9em;
+      color: #6c5ce7;
+      font-weight: bold;
+    }
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #dfe6e9;
+      transition: background .3s;
+    }
+    .dot.done { background: #6c5ce7; }
+    .dot.current { background: #fd79a8; transform: scale(1.3); }
+
+    /* ── Word section ── */
+    .word-section {
+      text-align: center;
+      background: linear-gradient(135deg, #f5f7fa, #e8ecf1);
+      border-radius: 20px;
+      padding: 18px 12px 14px;
+      margin-bottom: 18px;
+    }
+    .word-emoji { font-size: 3.8em; display: block; line-height: 1.2; }
+    .word-text {
+      font-size: clamp(2.6em, 8vw, 4em);
+      color: #2d3436;
+      font-weight: bold;
+      letter-spacing: 6px;
+      direction: rtl;
+      unicode-bidi: bidi-override;
+      line-height: 1.4;
+    }
+
+    /* ── Listen button ── */
+    .listen-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #f093fb, #f5576c);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 28px;
+      font-size: 1.25em;
+      font-family: inherit;
+      cursor: pointer;
+      width: 100%;
+      max-width: 280px;
+      margin: 0 auto 20px;
+      box-shadow: 0 6px 18px rgba(245,87,108,.35);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .listen-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(245,87,108,.45); }
+    .listen-btn:active { transform: scale(.97); }
+    .listen-btn.speaking { animation: pulse .5s ease-in-out infinite alternate; }
+
+    /* ── Answer slots ── */
+    .section-label { text-align: center; color: #636e72; font-size: .95em; margin-bottom: 8px; }
+    .answer-slots {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      direction: rtl;
+      margin-bottom: 18px;
+    }
+    .slot {
+      width: 64px; height: 64px;
+      border: 3px dashed #b2bec3;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2em;
+      background: #f8f9fa;
+      cursor: default;
+      transition: all .2s;
+      position: relative;
+    }
+    .slot.filled {
+      border-style: solid;
+      cursor: pointer;
+    }
+    .slot.filled:hover { background: #ffe0e0; }
+    .slot.correct { border-color: #00b894 !important; background: #e8fff7; cursor: default; }
+    .slot.wrong { animation: shake .35s ease-in-out; }
+
+    /* ── Tile pool ── */
+    .tiles-wrap { min-height: 78px; margin-bottom: 14px; }
+    .tiles {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      direction: rtl;
+    }
+    .tile {
+      width: 64px; height: 64px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2em;
+      font-weight: bold;
+      color: #fff;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,.18);
+      transition: transform .15s, box-shadow .15s, opacity .2s;
+    }
+    .tile:hover { transform: translateY(-4px) scale(1.08); box-shadow: 0 8px 20px rgba(0,0,0,.22); }
+    .tile:active { transform: scale(.95); }
+    .tile.used { opacity: 0; pointer-events: none; }
+
+    /* ── Feedback ── */
+    .feedback {
+      text-align: center;
+      font-size: 1.4em;
+      padding: 12px 16px;
+      border-radius: 14px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .feedback.success { background: linear-gradient(135deg,#a8edea,#fed6e3); color: #2d3436; display: block; animation: zoomIn .4s ease; }
+    .feedback.error   { background: #fff3cd; color: #856404; display: block; animation: shake .35s ease-in-out; }
+
+    /* ── Next / Restart buttons ── */
+    .next-btn, .restart-btn {
+      display: none;
+      background: linear-gradient(135deg, #43e97b, #38f9d7);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 36px;
+      font-size: 1.25em;
+      font-family: inherit;
+      cursor: pointer;
+      margin: 0 auto 4px;
+      box-shadow: 0 6px 18px rgba(67,233,123,.35);
+      transition: transform .15s;
+    }
+    .next-btn:hover, .restart-btn:hover { transform: translateY(-2px); }
+    .next-btn.show, .restart-btn.show { display: block; }
+
+    /* ── Completion screen ── */
+    #completion { display: none; text-align: center; padding: 10px 0; }
+    #completion.show { display: block; }
+    #game-area.hide { display: none; }
+    .comp-emoji { font-size: 5em; }
+    .comp-title { font-size: 2em; color: #6c5ce7; margin: 12px 0 8px; }
+    .comp-sub { font-size: 1.15em; color: #636e72; margin-bottom: 20px; }
+
+    /* ── Confetti canvas ── */
+    #confetti {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* ── Animations ── */
+    @keyframes pulse { to { transform: scale(1.05); } }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25%      { transform: translateX(-8px); }
+      75%      { transform: translateX(8px); }
+    }
+    @keyframes zoomIn {
+      from { transform: scale(.4); opacity: 0; }
+      to   { transform: scale(1);  opacity: 1; }
+    }
+    @keyframes popIn {
+      0%   { transform: scale(0); }
+      70%  { transform: scale(1.18); }
+      100% { transform: scale(1); }
+    }
+    .pop { animation: popIn .25s ease-out; }
+
+    @media (max-width: 420px) {
+      .card { padding: 20px 14px; }
+      .slot, .tile { width: 52px; height: 52px; font-size: 1.65em; }
+    }
+  </style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+
+<div class="card">
+
+  <!-- ── Game ── -->
+  <div id="game-area">
+
+    <div class="header">
+      <div class="title">📚 קרא איתי!</div>
+      <div class="progress-row" id="progress-dots"></div>
+    </div>
+
+    <div class="word-section">
+      <span class="word-emoji" id="word-emoji"></span>
+      <div class="word-text" id="word-text"></div>
+    </div>
+
+    <button class="listen-btn" id="listen-btn">🔊 שמעי את המילה</button>
+
+    <p class="section-label">סדרי את האותיות:</p>
+    <div class="answer-slots" id="answer-slots"></div>
+
+    <div class="tiles-wrap">
+      <div class="tiles" id="tiles"></div>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="next-btn">המילה הבאה ⬅️</button>
+
+  </div>
+
+  <!-- ── Completion ── -->
+  <div id="completion">
+    <div class="comp-emoji">🌟</div>
+    <div class="comp-title">כל הכבוד! סיימת הכול!</div>
+    <div class="comp-sub">את ממש חכמה וגדולה! 🎉</div>
+    <button class="restart-btn show" onclick="restart()">לשחק שוב! 🔄</button>
+  </div>
+
+</div><!-- /card -->
+
+<script>
+// ─── Word list ───────────────────────────────────────────────────────────────
+const WORDS = [
+  { text: 'יַד',        emoji: '🖐️' },
+  { text: 'אָב',        emoji: '👨' },
+  { text: 'לֵב',        emoji: '❤️' },
+  { text: 'פֶּה',       emoji: '👄' },
+  { text: 'דָּג',       emoji: '🐟' },
+  { text: 'כֶּלֶב',     emoji: '🐶' },
+  { text: 'חָלָב',      emoji: '🥛' },
+  { text: 'בַּיִת',     emoji: '🏠' },
+  { text: 'יֶלֶד',      emoji: '👦' },
+  { text: 'דֶּלֶת',     emoji: '🚪' },
+  { text: 'שֶׁמֶשׁ',    emoji: '☀️' },
+  { text: 'אֹכֶל',      emoji: '🍽️' },
+  { text: 'יַלְדָּה',   emoji: '👧' },
+  { text: 'תַּפּוּחַ',  emoji: '🍎' },
+  { text: 'כּוֹכָב',    emoji: '⭐' },
+];
+
+const COLORS = ['#FF6B6B','#FFB347','#FFD93D','#6BCB77','#45B7D1','#4D96FF','#C77DFF','#FF79A8'];
+
+const SUCCESS_MSG = [
+  '🌟 מצוין! כל הכבוד!',
+  '🎉 יפה מאוד! את גדולה!',
+  '⭐ נהדר! ממש טוב!',
+  '🌈 פנטסטי! את חכמה!',
+  '🏆 מעולה! כישרון אמיתי!',
+];
+const ERROR_MSG = [
+  '🤔 לא בדיוק… נסי שוב!',
+  '💪 כמעט! עוד פעם!',
+  '😊 לא נכון, אבל את יכולה!',
+];
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let wordIdx   = 0;
+let baseWord  = '';
+let tiles     = [];   // [{id, letter, color, placed}]
+let placed    = [];   // slot→tileId | null
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function stripNikud(s) {
+  return s.replace(/[\u05B0-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\uFB1E]/g, '');
+}
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ─── Init word ───────────────────────────────────────────────────────────────
+function loadWord(idx) {
+  const w = WORDS[idx];
+  baseWord = stripNikud(w.text);
+  const letters = [...baseWord];
+
+  // Shuffled tile order
+  const order = shuffle(letters.map((_, i) => i));
+  tiles = order.map(origIdx => ({
+    id:     origIdx,
+    letter: letters[origIdx],
+    color:  COLORS[origIdx % COLORS.length],
+    placed: false,
+  }));
+  placed = new Array(letters.length).fill(null);
+
+  // Update DOM
+  document.getElementById('word-emoji').textContent = w.emoji;
+  document.getElementById('word-text').textContent  = w.text;
+
+  // Progress dots
+  const dotsEl = document.getElementById('progress-dots');
+  dotsEl.innerHTML = '';
+  WORDS.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < idx ? ' done' : i === idx ? ' current' : '');
+    dotsEl.appendChild(d);
+  });
+
+  hideFeedback();
+  document.getElementById('next-btn').classList.remove('show');
+  renderSlots();
+  renderTiles();
+}
+
+// ─── Render ──────────────────────────────────────────────────────────────────
+function renderSlots() {
+  const el = document.getElementById('answer-slots');
+  el.innerHTML = '';
+  placed.forEach((tileId, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'slot' + (tileId !== null ? ' filled' : '');
+    if (tileId !== null) {
+      const t = tiles.find(x => x.id === tileId);
+      slot.textContent = t.letter;
+      slot.style.borderColor = t.color;
+      slot.style.color       = t.color;
+      slot.onclick = () => removeTile(i);
+      slot.title = 'לחצי להסיר';
+    }
+    el.appendChild(slot);
+  });
+}
+
+function renderTiles() {
+  const el = document.getElementById('tiles');
+  el.innerHTML = '';
+  tiles.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'tile' + (t.placed ? ' used' : '');
+    div.textContent = t.letter;
+    div.style.background = t.color;
+    div.dataset.id = t.id;
+    if (!t.placed) div.onclick = () => placeTile(t.id);
+    el.appendChild(div);
+  });
+}
+
+// ─── Interactions ────────────────────────────────────────────────────────────
+function placeTile(id) {
+  const next = placed.indexOf(null);
+  if (next === -1) return;
+
+  tiles.find(t => t.id === id).placed = true;
+  placed[next] = id;
+
+  renderSlots();
+  renderTiles();
+
+  // Animate slot
+  const slots = document.querySelectorAll('.slot');
+  slots[next].classList.add('pop');
+  slots[next].addEventListener('animationend', () => slots[next].classList.remove('pop'), { once: true });
+
+  // Play click sound
+  playClick();
+
+  // Auto-check
+  if (placed.every(x => x !== null)) setTimeout(checkAnswer, 350);
+}
+
+function removeTile(slotIdx) {
+  const id = placed[slotIdx];
+  if (id === null) return;
+  tiles.find(t => t.id === id).placed = false;
+  placed[slotIdx] = null;
+  renderSlots();
+  renderTiles();
+  hideFeedback();
+  document.getElementById('next-btn').classList.remove('show');
+}
+
+// ─── Check ───────────────────────────────────────────────────────────────────
+function checkAnswer() {
+  const assembled = placed.map(id => tiles.find(t => t.id === id).letter).join('');
+  const ok = assembled === baseWord;
+
+  const feedbackEl = document.getElementById('feedback');
+  const slots = document.querySelectorAll('.slot');
+
+  if (ok) {
+    feedbackEl.textContent = rand(SUCCESS_MSG);
+    feedbackEl.className = 'feedback success';
+    slots.forEach(s => { s.classList.add('correct'); s.onclick = null; });
+    document.getElementById('next-btn').classList.add('show');
+    playSuccess();
+    launchConfetti();
+  } else {
+    feedbackEl.textContent = rand(ERROR_MSG);
+    feedbackEl.className = 'feedback error';
+    slots.forEach(s => {
+      s.classList.add('wrong');
+      s.addEventListener('animationend', () => s.classList.remove('wrong'), { once: true });
+    });
+    setTimeout(resetAnswer, 1400);
+  }
+}
+
+function resetAnswer() {
+  tiles.forEach(t => t.placed = false);
+  placed.fill(null);
+  renderSlots();
+  renderTiles();
+  hideFeedback();
+}
+
+function hideFeedback() {
+  const el = document.getElementById('feedback');
+  el.style.display = 'none';
+  el.className = 'feedback';
+}
+
+// ─── Navigation ──────────────────────────────────────────────────────────────
+function nextWord() {
+  wordIdx++;
+  if (wordIdx >= WORDS.length) {
+    document.getElementById('game-area').classList.add('hide');
+    document.getElementById('completion').classList.add('show');
+    launchConfetti();
+    setTimeout(launchConfetti, 800);
+  } else {
+    loadWord(wordIdx);
+  }
+}
+
+function restart() {
+  wordIdx = 0;
+  document.getElementById('game-area').classList.remove('hide');
+  document.getElementById('completion').classList.remove('show');
+  loadWord(0);
+}
+
+// ─── Speech ──────────────────────────────────────────────────────────────────
+document.getElementById('listen-btn').addEventListener('click', () => {
+  if (!('speechSynthesis' in window)) {
+    alert('הדפדפן שלך אינו תומך בהקראה. נסי בכרום.');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(WORDS[wordIdx].text);
+  utt.lang  = 'he-IL';
+  utt.rate  = 0.72;
+  utt.pitch = 1.1;
+  const btn = document.getElementById('listen-btn');
+  utt.onstart = () => btn.classList.add('speaking');
+  utt.onend   = () => btn.classList.remove('speaking');
+  utt.onerror = () => btn.classList.remove('speaking');
+  window.speechSynthesis.speak(utt);
+});
+
+document.getElementById('next-btn').addEventListener('click', nextWord);
+
+// ─── Audio feedback ──────────────────────────────────────────────────────────
+function getAudioCtx() {
+  try { return new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+}
+
+function playClick() {
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const g   = ctx.createGain();
+  osc.connect(g); g.connect(ctx.destination);
+  osc.frequency.value = 600; osc.type = 'sine';
+  g.gain.setValueAtTime(.15, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .12);
+  osc.start(); osc.stop(ctx.currentTime + .12);
+}
+
+function playSuccess() {
+  const ctx = getAudioCtx(); if (!ctx) return;
+  [523,659,784,1047].forEach((freq, i) => {
+    setTimeout(() => {
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.frequency.value = freq; osc.type = 'sine';
+      g.gain.setValueAtTime(.28, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .35);
+      osc.start(); osc.stop(ctx.currentTime + .35);
+    }, i * 130);
+  });
+}
+
+// ─── Confetti ────────────────────────────────────────────────────────────────
+let particles = [];
+let rafId = null;
+
+function launchConfetti() {
+  const canvas = document.getElementById('confetti');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colors = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#C77DFF','#FF9A3C','#fd79a8'];
+  for (let i = 0; i < 90; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: -12,
+      vx: (Math.random() - .5) * 4.5,
+      vy: Math.random() * 3.5 + 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: Math.random() * 10 + 5,
+      rot: Math.random() * 360,
+      drot: (Math.random() - .5) * 12,
+      shape: Math.random() > .5 ? 'rect' : 'circle',
+    });
+  }
+  if (!rafId) animConfetti();
+}
+
+function animConfetti() {
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  particles = particles.filter(p => p.y < canvas.height + 20);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy; p.rot += p.drot; p.vy += .08;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot * Math.PI / 180);
+    ctx.fillStyle = p.color;
+    if (p.shape === 'rect') ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+    else { ctx.beginPath(); ctx.arc(0, 0, p.size/2, 0, Math.PI*2); ctx.fill(); }
+    ctx.restore();
+  });
+
+  if (particles.length) {
+    rafId = requestAnimationFrame(animConfetti);
+  } else {
+    rafId = null;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+// ─── Start ───────────────────────────────────────────────────────────────────
+loadWord(0);
+</script>
+</body>
+</html>
